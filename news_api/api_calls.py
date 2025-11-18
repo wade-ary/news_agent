@@ -95,8 +95,8 @@ def fetch_the_news_api(keyword : str, max_items: int = 10):
 
     params = urllib.parse.urlencode({
         'api_token': 'YOUR_API_TOKEN',
-        'categories': 'business,tech',
-        'limit': 50,
+        'categories': keyword,
+        'limit': max_items,
         })
 
     conn.request('GET', '/v1/news/all?{}'.format(params))
