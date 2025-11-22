@@ -1,43 +1,61 @@
-from newspaper import Article
+from openai import OpenAI
+
+def compute_similarity(articles):
+    n = len(articles)
+
+    
+    sim_matrix = [[0.0 for _ in range(n)] for _ in range(n)]
+
+    # loop over all pairs
+    for i in range(n):
+        for j in range(i + 1, n):   # upper triangle only
+            art_i = articles[i]
+            art_j = articles[j]
+
+      
+            cosine = compute_cosine(art_i["embedding"], art_j["embedding"])
+            topic_overlap = compute_topic_overlap(art_i["topics"], art_j["topics"])
+      
+
+       
+            score = 0.5 * cosine + 0.5 * topic_overlap
+
+            sim_matrix[i][j] = score
+            sim_matrix[j][i] = score
+
+    return sim_matrix
 
 
+import math
 
+def compute_cosine(e1, e2):
+   
+    dot = sum(a * b for a, b in zip(e1, e2))
 
-def get_full_texts(articles):
-    # 1. Deduplicate by URL
-    unique = set()
-    unique_articles = []
-    for article in articles:
-        url = article.get("url")
-        if url not in unique:
-            unique.add(url)
-            unique_articles.append(article)
+    
+    norm1 = math.sqrt(sum(a * a for a in e1))
+    norm2 = math.sqrt(sum(b * b for b in e2))
 
-    # 2. Scrape & add full_text field
-    for article in unique_articles:
-        url = article["url"]
-        try:
-            article_text = scrape_url(url)
-        except:
-            article_text = None
+    if norm1 == 0 or norm2 == 0:
+        return 0.0
 
-        # Add the new field to the article dict
-        article["full_text"] = article_text
+    return dot / (norm1 * norm2)
 
-    return unique_articles
+client = OpenAI()
 
-def scrape_url(url):
-    try:
-        art = Article(url)
-        art.download()
-        art.parse()
-        text = art.text
-    except:
-        return None
+def compute_topic_overlap(t1, t2):
+    prompt = f"""
+Give a score between 0 and 1 2 decimal places for the overlap in topics using semantics
 
-    if len(text) < 300:
-        return None
+topics:
+{t1, t2}
+    """
 
-    return text
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "user", "content": prompt.strip()}
+        ]
+    )
 
-
+    return response.choices[0].message.content
