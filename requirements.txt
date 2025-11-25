@@ -1,1 +1,5 @@
 eventregistry
+newsdataapi
+finflight_client
+http
+urllib
