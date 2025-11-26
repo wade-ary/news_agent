@@ -1,45 +1,33 @@
-import os
-from llama_index.core.retrievers import VectorIndexRetriever
-from llama_index.core import Document, VectorStoreIndex
+from llama_index.core import Document
 from llama_index.core.node_parser import SimpleNodeParser
-from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.core.postprocessor import LLMRerank
+from llama_index.llms.openai import OpenAI
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"),
-    project=os.getenv("OPENAI_PROJECT_ID"),
-    organization= os.getenv("OPENAI_ORG_ID"))
 
-embed_model = OpenAIEmbedding(
-    model="text-embedding-ada-002",
-    api_key= os.getenv("OPENAI_API_KEY"),
-    project= os.getenv("OPENAI_PROJECT_ID"),
-    organization= os.getenv("OPENAI_ORG_ID"),
-    embed_batch_size=1
-)
-
-def rerank_chunks(
-    chunks, 
-    query, 
-    top_k=50, ):
+def rerank_articles(chunks, query, top_k=50):
     """
-    Rerank chunks using a basic HuggingFace embedding model.
-    Default: BAAI/bge-small-en-v1.5 (lightweight, reliable, and fully supported).
+    Rerank raw text chunks using an LLM (LLMRerank).
     """
 
-    # 1. Convert raw text → Documents
-    documents = [Document(text=chunk) for chunk in chunks]
+    # 1. Convert each chunk into a LlamaIndex Document
+    documents = [Document(page_content=chunk) for chunk in chunks]
 
-    parser = SimpleNodeParser()
+    # 2. Convert Documents -> Nodes
+    parser = SimpleNodeParser.from_defaults()
     nodes = parser.get_nodes_from_documents(documents)
 
+    # 3. Initialize LLM-based reranker
+    reranker = LLMRerank(
+        top_n=min(top_k, len(nodes)),      # avoid requesting more than available
+        choice_batch_size=5,
+        llm=OpenAI(model="gpt-4o-mini"),   # fast + very good for reranking
+    )
 
+    # 4. Rerank nodes based on the query
+    reranked_nodes = reranker.postprocess_nodes(
+        nodes,
+        query_str=query
+    )
 
-    # 4. Build vector index
-    index = VectorStoreIndex(nodes, embed_model=embed_model)
-
-    # 5. Retrieve top_k similar chunks
-    retriever = VectorIndexRetriever(index=index, similarity_top_k=top_k)
-
-    results = retriever.retrieve(query)
-
-    # 6. Extract ranked content
-    return [res.node.get_content() for res in results]
+    # 5. Return ranked text chunks
+    return [n.node.get_content() for n in reranked_nodes]
