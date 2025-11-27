@@ -14,7 +14,7 @@ def compute_similarity(articles):
 
       
             cosine = compute_cosine(art_i["embedding"], art_j["embedding"])
-            topic_overlap = compute_topic_overlap(art_i["topics"], art_j["topics"])
+            topic_overlap = compute_topic_overlap(art_i["full_text"], art_j["full_text"])
       
 
        
@@ -45,7 +45,7 @@ client = OpenAI()
 
 def compute_topic_overlap(t1, t2):
     prompt = f"""
-Give a score between 0 and 1 2 decimal places for the overlap in topics using semantics
+Give a score between 0 and 1, 2 decimal places for the similar theme these articles follow.
 
 topics:
 {t1, t2}

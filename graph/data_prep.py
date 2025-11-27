@@ -68,26 +68,3 @@ def get_topics(articles):
     return articles
 
 
-def extract_topics(article_text):
-    prompt = f"""
-You are an assistant that extracts high-level topics from a news article.
-
-Task:
-- Read the article text below
-- Return 3–6 short, high-level themes (e.g., "AI regulation", 
-  "model releases", "chip shortages", "big tech earnings")
-- Do NOT write sentences or detailed explanations
-- Return results as a JSON list of strings
-
-Article:
-{article_text}
-    """
-
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "user", "content": prompt.strip()}
-        ]
-    )
-
-    return response.choices[0].message.content
