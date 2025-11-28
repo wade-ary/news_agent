@@ -59,3 +59,30 @@ topics:
     )
 
     return response.choices[0].message.content
+
+
+def build_graph(sim_matrix, top_n=3):
+    n = len(sim_matrix)
+    edges = []
+
+    for i in range(n):
+        # get similarities for article i to all others
+        sims = list(enumerate(sim_matrix[i]))  # [(0, sim), (1, sim), ...]
+        
+        # remove self
+        sims = [(j, s) for j, s in sims if j != i]
+
+        # sort by similarity descending
+        sims.sort(key=lambda x: x[1], reverse=True)
+
+        # take top_n
+        top_neighbors = sims[:top_n]
+
+        # add edges
+        for j, score in top_neighbors:
+            # avoid duplicates: only add edge if i < j
+        
+            edges.append(min(i,j), max(i,j), score)
+           
+
+    return edges
