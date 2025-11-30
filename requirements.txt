@@ -10,3 +10,4 @@ newspaper3k
 networkx
 igraph
 leidenalg
+numpy

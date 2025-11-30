@@ -1,13 +1,13 @@
 from igraph import Graph
 import leidenalg
 from openai import OpenAI
-
+import numpy as np
 def run_community(G):
     partition = leidenalg.find_partition(G, leidenalg.RBConfigurationVertexPartition, weights='weight')
 
     return partition
 
-
+client = OpenAI()
 def analyze_clusters(articles, partition):
     clusters = {}
 
@@ -24,17 +24,23 @@ def analyze_clusters(articles, partition):
         for i in node_ids:
             embedding.append(articles[i]["embedding"])
         combined_summary = summarize_cluster(full_text)
-
+  
+        response = client.embeddings.create(
+            input=[combined_summary],
+            model="text-embedding-ada-002"
+        )
+        summary_embedding = np.array(response.data[0].embedding)
         clusters[cid] = {
             "article_ids": node_ids,
             "keywords": keywords,
             "embedding": embedding,
-            "combined_summary": combined_summary
+            "combined_summary": combined_summary,
+            "summary_embedding": summary_embedding
         }
 
     return clusters
 
-client = OpenAI()
+
 def summarize_cluster(text):
     prompt = f"""
 Give a proper summary of this combinations of articles they talk about a similar topic point out
