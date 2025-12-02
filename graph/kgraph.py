@@ -86,3 +86,12 @@ def build_graph(sim_matrix, top_n=3):
            
 
     return edges
+
+from igraph import Graph
+
+def create_graph(edges):
+    G = Graph()
+    G.add_vertices(num_articles)
+    G.add_edges([(u, v) for u, v, w in edges])
+    G.es['weight'] = [w for u, v, w in edges]
+    return G
